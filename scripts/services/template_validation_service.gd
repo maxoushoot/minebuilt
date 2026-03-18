@@ -1,6 +1,22 @@
 extends RefCounted
 class_name TemplateValidationService
 
+const FUNCTIONAL_OBJECT_DEFINITIONS: Array[FunctionalObjectDefinition] = [
+	preload("res://data/definitions/objects/bed_basic.tres"),
+	preload("res://data/definitions/objects/desk_basic.tres"),
+	preload("res://data/definitions/objects/board_basic.tres"),
+	preload("res://data/definitions/objects/admin_desk_basic.tres"),
+	preload("res://data/definitions/objects/storage_basic.tres"),
+	preload("res://data/definitions/objects/stall_basic.tres"),
+	preload("res://data/definitions/objects/field_basic.tres"),
+]
+
+var _category_by_object_id: Dictionary = {}
+
+func _init() -> void:
+	for object_def in FUNCTIONAL_OBJECT_DEFINITIONS:
+		_category_by_object_id[object_def.id] = object_def.category
+
 func validate_template(template: BuildingTemplateDefinition, archetype: TemplateArchetypeDefinition) -> Dictionary:
 	var errors: Array[String] = []
 	if template.block_cells.size() < max(archetype.minimum_block_count, 1):
@@ -25,18 +41,27 @@ func validate_template(template: BuildingTemplateDefinition, archetype: Template
 func _extract_object_categories(template: BuildingTemplateDefinition) -> Dictionary:
 	var categories := {}
 	for object_id in template.object_placements.keys():
-		_register_category_from_object_id(categories, object_id)
+		_register_category_from_object_entry(categories, {"object_id": object_id})
 
 	for entry in template.object_instances:
-		var object_id: StringName = entry.get("object_id", &"")
-		_register_category_from_object_id(categories, object_id)
+		_register_category_from_object_entry(categories, entry)
 
 	return categories
 
-func _register_category_from_object_id(categories: Dictionary, object_id: StringName) -> void:
+func _register_category_from_object_entry(categories: Dictionary, entry: Dictionary) -> void:
+	var explicit_category: StringName = entry.get("category", &"")
+	if explicit_category != &"":
+		categories[explicit_category] = true
+		return
+
+	var object_id: StringName = entry.get("object_id", &"")
 	if object_id == &"":
 		return
-	# V1: object id prefix acts as category key (ex: bed_basic -> bed).
+	if _category_by_object_id.has(object_id):
+		categories[_category_by_object_id[object_id]] = true
+		return
+
+	# Fallback for unknown objects: use id prefix (ex: bed_basic -> bed).
 	var split := String(object_id).split("_")
-	var category := StringName(split[0]) if split.size() > 0 else StringName(object_id)
-	categories[category] = true
+	var inferred_category := StringName(split[0]) if split.size() > 0 else StringName(object_id)
+	categories[inferred_category] = true

@@ -37,10 +37,6 @@ func initialize_village_logistics(village: VillageState, pathfinding: GridPathfi
 		if villager.current_cell == Vector3i.ZERO:
 			var home := _find_building(village.placed_buildings, villager.home_building_id)
 			villager.current_cell = _building_anchor_cell(home, pathfinding, villager.current_cell)
-		villager.path_cells.clear()
-		villager.carry_resource = &""
-		villager.carry_units = 0
-		villager.logistics_job = {}
 
 func tick(village: VillageState, pathfinding: GridPathfindingService, delta: float) -> Dictionary:
 	if village == null:

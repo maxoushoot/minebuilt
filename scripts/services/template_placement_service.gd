@@ -89,7 +89,7 @@ func create_building_instance(
 	object_instances: Array[Dictionary]
 ) -> BuildingInstance:
 	var instance := BuildingInstance.new()
-	instance.id = StringName("building_%s_%d" % [String(template.id), Time.get_unix_time_from_system()])
+	instance.id = StringName("building_%s_%d" % [String(template.id), Time.get_ticks_usec()])
 	instance.template_id = template.id
 	instance.template_name = template.display_name
 	instance.archetype_id = template.archetype_id

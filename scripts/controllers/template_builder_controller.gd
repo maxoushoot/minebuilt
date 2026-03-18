@@ -174,6 +174,7 @@ func _try_place_object() -> void:
 
 	var entry := {
 		"object_id": selected_def.id,
+		"category": selected_def.category,
 		"cell": _ghost_cell,
 		"rotation": _rotation_index,
 	}
@@ -323,7 +324,7 @@ func _populate_functional_objects() -> void:
 
 func _build_runtime_template(id_suffix: String) -> BuildingTemplateDefinition:
 	var template := BuildingTemplateDefinition.new()
-	template.id = StringName("template_%s_%d" % [id_suffix, Time.get_unix_time_from_system()])
+	template.id = StringName("template_%s_%d" % [id_suffix, Time.get_ticks_usec()])
 	template.display_name = id_suffix
 	template.archetype_id = _selected_archetype.id if _selected_archetype else &""
 	template.block_cells = _build_state.cells.keys()
