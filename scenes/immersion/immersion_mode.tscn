@@ -1,0 +1,16 @@
+[gd_scene load_steps=2 format=3 uid="uid://immersion_mode"]
+
+[ext_resource type="Script" path="res://scripts/controllers/immersion_mode_controller.gd" id="1_script"]
+
+[node name="ImmersionMode" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="HintLabel" type="Label" parent="UI"]
+unique_name_in_owner = true
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 450.0
+offset_bottom = 45.0
+text = "FPS immersion mode"
