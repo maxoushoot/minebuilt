@@ -2,6 +2,8 @@ extends Node
 class_name AppServices
 
 const SAMPLE_TEMPLATE: BuildingTemplateDefinition = preload("res://data/definitions/templates/sample_house_template.tres")
+const SAMPLE_FARM_TEMPLATE: BuildingTemplateDefinition = preload("res://data/definitions/templates/sample_farm_template.tres")
+const SAMPLE_MARKET_TEMPLATE: BuildingTemplateDefinition = preload("res://data/definitions/templates/sample_market_template.tres")
 
 var world_generation: WorldGenerationService
 var pathfinding: GridPathfindingService
@@ -28,5 +30,9 @@ func reset_session() -> void:
 
 func _build_default_session() -> GameSessionState:
 	var new_session := GameSessionState.new()
-	new_session.template_catalog.templates = [SAMPLE_TEMPLATE.duplicate(true)]
+	new_session.template_catalog.templates = [
+		SAMPLE_TEMPLATE.duplicate(true),
+		SAMPLE_FARM_TEMPLATE.duplicate(true),
+		SAMPLE_MARKET_TEMPLATE.duplicate(true),
+	]
 	return new_session

@@ -33,6 +33,9 @@ visible = false
 [node name="GhostRoot" type="Node3D" parent="."]
 unique_name_in_owner = true
 
+[node name="LogisticsActorsRoot" type="Node3D" parent="."]
+unique_name_in_owner = true
+
 [node name="GroundPlane" type="MeshInstance3D" parent="."]
 mesh = SubResource("PlaneMesh_ground")
 
@@ -56,6 +59,11 @@ text = "Generating world..."
 unique_name_in_owner = true
 layout_mode = 2
 text = "Population totale: 0 | Assignée: 0 | Libre: 0"
+
+[node name="LogisticsLabel" type="Label" parent="UI/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Logistique V1 | Nourriture: 0 | Bois: 0 | Matériaux: 0"
 
 [node name="PlacementLabel" type="Label" parent="UI/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
