@@ -2,38 +2,48 @@
 
 ## Runtime Layers
 
-1. **Definitions (`scripts/data/definitions`)**
-   - Immutable `Resource` assets.
-   - Block and functional object metadata.
-   - Template archetype rules and template content.
+1. **Definitions (`scripts/data/definitions` + `data/definitions`)**
+   - Classes `Resource` immuables (`BlockDefinition`, `FunctionalObjectDefinition`, etc.).
+   - Assets `.tres` de base servant de catalogue de départ.
 
 2. **Runtime State (`scripts/data/runtime`)**
-   - Mutable save-ready resources (`VillageState`, `TemplateCatalogState`).
+   - État mutable de session (`GameSessionState`) encapsulant:
+     - `VillageState`
+     - `TemplateCatalogState`
 
 3. **Services (`scripts/services`)**
-   - Pure gameplay/business operations.
-   - No direct UI manipulation.
+   - Opérations métier pures et modulaires.
+   - Exposées globalement via `AppServices` (autoload) pour éviter les couplages scène-à-scène.
 
 4. **Controllers (`scripts/controllers`)**
-   - Scene entry points.
-   - Orchestrate services and update view state.
+   - Points d'entrée de scènes.
+   - Pilotent les services et transitions de mode.
 
 5. **Scenes/UI (`scenes`)**
-   - Mode-specific compositions.
-   - Present current simulation state.
+   - Compositions visuelles par mode.
+   - HUD minimal pour navigation et statut.
 
-## Scene Separation
+## Core Singletons (autoload)
 
-- `main_menu.tscn`: mode entry points.
-- `world_mode.tscn`: city-builder management loop.
-- `template_builder_mode.tscn`: isolated template authoring space.
-- `immersion_mode.tscn`: optional first-person visit mode.
+- `AppState`
+  - Source de vérité du mode courant.
+  - Émet `mode_changed(previous, next)`.
+- `AppServices`
+  - Instancie les services centraux.
+  - Héberge l'état runtime (`session`).
+  - Expose `reset_session()` pour repartir sur une base propre.
 
-`game_root.tscn` handles scene switching through `AppState` mode changes.
+## Mode Routing
+
+- `game_root.tscn` + `GameRootController` gèrent l'injection de la scène active selon `AppState.current_mode`.
+- Modes supportés:
+  - `menu`
+  - `world`
+  - `template_builder`
+  - `immersion` (optionnel)
 
 ## Extensibility Notes
 
-- Add save/load by serializing runtime resources.
-- Add block/object catalogs as concrete `.tres` assets.
-- Upgrade pathfinding into chunk-aware navigation as map scale grows.
-- Add logistics jobs as explicit entities using existing service boundaries.
+- Ajouter save/load en sérialisant `GameSessionState`.
+- Étendre les catalogues `.tres` sans modifier la logique runtime.
+- Remplacer les stubs de services par des implémentations complètes (jobs logistiques, pathfinding avancé, simulation population).

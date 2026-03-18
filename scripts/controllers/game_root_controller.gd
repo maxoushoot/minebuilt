@@ -24,6 +24,7 @@ func _switch_to(mode: StringName) -> void:
 
 	var packed := _scene_for_mode(mode)
 	if packed == null:
+		AppState.set_mode(AppState.MODE_MENU)
 		return
 
 	_active_scene = packed.instantiate()

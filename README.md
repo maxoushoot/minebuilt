@@ -1,25 +1,32 @@
 # Voxel Village Builder (Godot 4)
 
-Base architecture for a voxel city-builder with two core loops:
+Base technique Godot 4 pour un city-builder voxel orienté données, avec séparation claire entre modes de jeu.
 
-1. **World Mode**: top-down management simulation on a 3D grid.
-2. **Template Builder Mode**: separate sandbox to craft reusable building templates.
+## Modes disponibles
 
-## V1 Principles
+1. **Menu**: point d'entrée principal.
+2. **World Mode**: boucle de gestion (stub minimal, génération terrain simplifiée).
+3. **Template Builder Mode**: atelier séparé pour créer/valider des templates de bâtiments.
+4. **Immersion Mode** (optionnel dans ce socle): vue FPS de test.
 
-- Data-driven design with `Resource` definitions for blocks, functional objects and templates.
-- Strict separation between data, business services, controllers and UI scenes.
-- Functional object logic is independent from voxel block visuals.
-- Cellular pathfinding and simple logistics/population services prepared for iteration.
+## Principes du socle
 
-## Folder Structure
+- `Resource` de définitions immuables (`scripts/data/definitions` + `data/definitions`).
+- État runtime mutable isolé (`scripts/data/runtime`).
+- Services métier centralisés (`scripts/services`) et exposés via `AppServices` (autoload).
+- Routing de modes centralisé via `AppState` (autoload) + `GameRootController`.
+- Contrôleurs de scènes fins (`scripts/controllers`) et HUD minimal.
 
-- `scenes/`: scene composition (`menu`, `world`, `template_builder`, `immersion`, `root`).
-- `scripts/data/definitions`: reusable gameplay definitions.
-- `scripts/data/runtime`: mutable runtime state resources.
-- `scripts/services`: business logic services (generation, validation, pathfinding, simulation).
-- `scripts/controllers`: thin scene controllers.
+## Structure rapide
 
-## Current Scope
+- `scenes/`: composition des scènes (menu, world, template_builder, immersion, root).
+- `scripts/core`: état global app + branchement des services.
+- `scripts/services`: logique métier stubée et testable.
+- `scripts/data/definitions`: classes de définitions (`Resource`).
+- `scripts/data/runtime`: état mutable de session.
+- `data/definitions`: premiers assets `.tres` de référence.
+- `docs/`: documentation d'architecture.
 
-This baseline focuses on architecture and mode routing. It intentionally keeps gameplay systems simple and modular for incremental implementation.
+## Objectif actuel
+
+Ce repository fournit un squelette compilable et maintenable, prêt pour les prochaines briques (simulation détaillée, logistique complète, pathfinding avancé), sans implémenter ces systèmes dès maintenant.

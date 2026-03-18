@@ -42,4 +42,4 @@ text = "Quit"
 
 [connection signal="pressed" from="VBoxContainer/StartWorldButton" to="." method="_on_start_world_pressed"]
 [connection signal="pressed" from="VBoxContainer/TemplateButton" to="." method="_on_template_builder_pressed"]
-[connection signal="pressed" from="VBoxContainer/QuitButton" to="." method="queue_free"]
+[connection signal="pressed" from="VBoxContainer/QuitButton" to="." method="_on_quit_pressed"]
