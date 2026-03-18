@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="BlockDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/definitions/block_definition.gd" id="1_block_def"]
+
+[resource]
+script = ExtResource("1_block_def")
+id = &"grass"
+display_name = "Grass"
+texture_id = &"grass"
+walkable = true
