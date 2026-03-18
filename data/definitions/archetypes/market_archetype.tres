@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("1_arch_def")
-id = &"house"
-display_name = "Maison"
-required_object_categories = Array[StringName]([&"bed"])
+id = &"market"
+display_name = "Marché"
+required_object_categories = Array[StringName]([&"etal", &"stockage"])
 minimum_block_count = 8
