@@ -6,6 +6,7 @@ var pathfinding: GridPathfindingService
 var population: PopulationService
 var logistics: LogisticsService
 var template_validation: TemplateValidationService
+var block_placement: BlockPlacementService
 
 var session: GameSessionState
 
@@ -15,6 +16,7 @@ func _ready() -> void:
 	population = PopulationService.new()
 	logistics = LogisticsService.new()
 	template_validation = TemplateValidationService.new()
+	block_placement = BlockPlacementService.new()
 	session = GameSessionState.new()
 
 func reset_session() -> void:
