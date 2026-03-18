@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="TemplateArchetypeDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/definitions/template_archetype_definition.gd" id="1_arch_def"]
+
+[resource]
+script = ExtResource("1_arch_def")
+id = &"house"
+display_name = "House"
+required_object_categories = Array[StringName]([&"bed"])

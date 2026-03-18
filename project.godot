@@ -8,6 +8,7 @@ config/features=PackedStringArray("4.2")
 
 [autoload]
 AppState="*res://scripts/core/app_state.gd"
+AppServices="*res://scripts/core/app_services.gd"
 
 [display]
 window/size/viewport_width=1600
