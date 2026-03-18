@@ -11,3 +11,8 @@ class_name BuildingInstance
 @export var rotation: int = 0
 @export var block_instances: Array[Dictionary] = []
 @export var object_instances: Array[Dictionary] = []
+@export var local_stocks: Dictionary = {
+	"food": 0,
+	"wood": 0,
+	"materials": 0,
+}

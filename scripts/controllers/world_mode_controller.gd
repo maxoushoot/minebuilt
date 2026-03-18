@@ -14,6 +14,7 @@ const BLOCK_CATALOG: Array[Dictionary] = [
 
 @onready var _status_label: Label = %StatusLabel
 @onready var _population_label: Label = %PopulationLabel
+@onready var _logistics_label: Label = %LogisticsLabel
 @onready var _placement_label: Label = %PlacementLabel
 @onready var _library_list: ItemList = %TemplateLibraryList
 @onready var _building_list: ItemList = %BuildingAssignmentList
@@ -22,6 +23,7 @@ const BLOCK_CATALOG: Array[Dictionary] = [
 @onready var _camera: Camera3D = %WorldCamera
 @onready var _renderer: GridMapBlockRenderer = %GridRenderer
 @onready var _ghost_root: Node3D = %GhostRoot
+@onready var _logistics_actors_root: Node3D = %LogisticsActorsRoot
 
 var _selected_template: BuildingTemplateDefinition
 var _selected_template_index: int = -1
@@ -34,6 +36,7 @@ var _ghost_mesh_nodes: Array[Node3D] = []
 var _selected_building_index: int = -1
 var _selected_assignable_index: int = -1
 var _assignable_villager_ids: Array[int] = []
+var _villager_actor_nodes: Dictionary = {}
 
 func _ready() -> void:
 	var village := AppServices.session.village
@@ -42,11 +45,13 @@ func _ready() -> void:
 	village.placed_buildings.clear()
 	village.villagers.clear()
 	village.worker_assignments.clear()
+	village.resource_stocks = {"food": 0, "wood": 0, "materials": 0}
 
 	var world_state := AppServices.session.world_voxel_state
 	world_state.cells = village.placed_blocks.duplicate(true)
 
 	AppServices.pathfinding.configure(Rect3i(0, 0, 0, MAP_WIDTH, MAP_HEIGHT, MAP_DEPTH))
+	AppServices.logistics.reset_runtime()
 	_renderer.configure(BLOCK_CATALOG)
 	_renderer.render_full(world_state)
 	_refresh_template_library()
@@ -56,6 +61,11 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	_update_ghost_preview()
+	var village := AppServices.session.village
+	var logistics_tick := AppServices.logistics.tick(village, AppServices.pathfinding, _delta)
+	if int(logistics_tick.get("deliveries", 0)) > 0:
+		_update_status()
+	_sync_villager_logistics_visuals()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
@@ -146,6 +156,12 @@ func _update_status() -> void:
 		population_stats.get("total", 0),
 		population_stats.get("assigned", 0),
 		population_stats.get("free", 0),
+	]
+	var stocks := AppServices.session.village.resource_stocks
+	_logistics_label.text = "Logistique V1 | Nourriture: %d | Bois: %d | Matériaux: %d" % [
+		int(stocks.get("food", 0)),
+		int(stocks.get("wood", 0)),
+		int(stocks.get("materials", 0)),
 	]
 
 func _refresh_assignment_ui() -> void:
@@ -343,11 +359,74 @@ func _place_selected_template() -> void:
 	for villager in spawned_villagers:
 		village.villagers.append(villager)
 
+	AppServices.logistics.initialize_village_logistics(village)
 	_renderer.render_full(world_state)
 	_refresh_assignment_ui()
 	_update_status()
 	_set_placement_message("Template '%s' posé avec succès." % [_selected_template.display_name], Color(0.52, 0.9, 0.58))
 	_update_ghost_preview()
+
+func _sync_villager_logistics_visuals() -> void:
+	var village := AppServices.session.village
+	var active_ids := {}
+	for villager in village.villagers:
+		active_ids[villager.id] = true
+		var actor := _villager_actor_nodes.get(villager.id, null)
+		if actor == null or not is_instance_valid(actor):
+			actor = _create_villager_actor()
+			_villager_actor_nodes[villager.id] = actor
+			_logistics_actors_root.add_child(actor)
+
+		actor.position = Vector3(
+			float(villager.current_cell.x) + 0.5,
+			float(villager.current_cell.y) + 0.45,
+			float(villager.current_cell.z) + 0.5
+		)
+		var crate: MeshInstance3D = actor.get_node("CarryCrate")
+		crate.visible = villager.carry_units > 0
+		if crate.visible:
+			crate.modulate = _resource_color(villager.carry_resource)
+
+	for villager_id in _villager_actor_nodes.keys():
+		if active_ids.has(villager_id):
+			continue
+		var stale_actor: Node3D = _villager_actor_nodes[villager_id]
+		if is_instance_valid(stale_actor):
+			stale_actor.queue_free()
+		_villager_actor_nodes.erase(villager_id)
+
+func _create_villager_actor() -> Node3D:
+	var actor := Node3D.new()
+	var body := MeshInstance3D.new()
+	var capsule := CapsuleMesh.new()
+	capsule.radius = 0.2
+	capsule.height = 0.5
+	body.mesh = capsule
+	var body_material := StandardMaterial3D.new()
+	body_material.albedo_color = Color(0.89, 0.78, 0.63)
+	body.material_override = body_material
+	actor.add_child(body)
+
+	var crate := MeshInstance3D.new()
+	crate.name = "CarryCrate"
+	var box := BoxMesh.new()
+	box.size = Vector3(0.28, 0.28, 0.28)
+	crate.mesh = box
+	crate.position = Vector3(0.0, 0.45, 0.0)
+	crate.visible = false
+	actor.add_child(crate)
+	return actor
+
+func _resource_color(resource_id: StringName) -> Color:
+	match resource_id:
+		&"food":
+			return Color(0.4, 0.84, 0.43)
+		&"wood":
+			return Color(0.59, 0.4, 0.25)
+		&"materials":
+			return Color(0.75, 0.75, 0.78)
+		_:
+			return Color(0.92, 0.92, 0.92)
 
 func _set_placement_message(message: String, color: Color) -> void:
 	_placement_label.text = message
