@@ -51,6 +51,7 @@ func _ready() -> void:
 	world_state.cells = village.placed_blocks.duplicate(true)
 
 	AppServices.pathfinding.configure(Rect3i(0, 0, 0, MAP_WIDTH, MAP_HEIGHT, MAP_DEPTH))
+	AppServices.pathfinding.rebuild_navigation_graph(world_state, village.placed_buildings)
 	AppServices.logistics.reset_runtime()
 	_renderer.configure(BLOCK_CATALOG)
 	_renderer.render_full(world_state)
@@ -359,12 +360,19 @@ func _place_selected_template() -> void:
 	for villager in spawned_villagers:
 		village.villagers.append(villager)
 
-	AppServices.logistics.initialize_village_logistics(village)
+	AppServices.pathfinding.apply_local_map_update(_extract_changed_cells(transformed_blocks), world_state, village.placed_buildings)
+	AppServices.logistics.initialize_village_logistics(village, AppServices.pathfinding)
 	_renderer.render_full(world_state)
 	_refresh_assignment_ui()
 	_update_status()
 	_set_placement_message("Template '%s' posé avec succès." % [_selected_template.display_name], Color(0.52, 0.9, 0.58))
 	_update_ghost_preview()
+
+func _extract_changed_cells(transformed_blocks: Array[Dictionary]) -> Array[Vector3i]:
+	var changed: Array[Vector3i] = []
+	for entry in transformed_blocks:
+		changed.append(entry.get("cell", Vector3i.ZERO))
+	return changed
 
 func _sync_villager_logistics_visuals() -> void:
 	var village := AppServices.session.village
