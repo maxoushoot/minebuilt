@@ -41,8 +41,8 @@ mesh = SubResource("PlaneMesh_ground")
 [node name="MarginContainer" type="MarginContainer" parent="UI"]
 offset_left = 16.0
 offset_top = 16.0
-offset_right = 700.0
-offset_bottom = 820.0
+offset_right = 760.0
+offset_bottom = 980.0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="UI/MarginContainer"]
 layout_mode = 2
@@ -51,6 +51,11 @@ layout_mode = 2
 unique_name_in_owner = true
 layout_mode = 2
 text = "Generating world..."
+
+[node name="PopulationLabel" type="Label" parent="UI/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Population totale: 0 | Assignée: 0 | Libre: 0"
 
 [node name="PlacementLabel" type="Label" parent="UI/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
@@ -64,7 +69,7 @@ text = "Template library"
 
 [node name="TemplateLibraryList" type="ItemList" parent="UI/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 280)
+custom_minimum_size = Vector2(0, 220)
 layout_mode = 2
 
 [node name="PlacementButtons" type="HBoxContainer" parent="UI/MarginContainer/VBoxContainer"]
@@ -77,6 +82,30 @@ text = "Rotate 90°"
 [node name="PlaceTemplateButton" type="Button" parent="UI/MarginContainer/VBoxContainer/PlacementButtons"]
 layout_mode = 2
 text = "Place Template"
+
+[node name="AssignmentTitle" type="Label" parent="UI/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Affectation manuelle"
+
+[node name="BuildingAssignmentList" type="ItemList" parent="UI/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 160)
+layout_mode = 2
+
+[node name="BuildingAssignmentInfoLabel" type="Label" parent="UI/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Sélectionnez un bâtiment"
+autowrap_mode = 2
+
+[node name="VillagerAssignList" type="ItemList" parent="UI/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 140)
+layout_mode = 2
+
+[node name="AssignVillagerButton" type="Button" parent="UI/MarginContainer/VBoxContainer"]
+text = "Assigner villageois sélectionné"
+layout_mode = 2
 
 [node name="Buttons" type="HBoxContainer" parent="UI/MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -92,5 +121,8 @@ text = "Template Builder"
 [connection signal="item_selected" from="UI/MarginContainer/VBoxContainer/TemplateLibraryList" to="." method="_on_template_library_list_item_selected"]
 [connection signal="pressed" from="UI/MarginContainer/VBoxContainer/PlacementButtons/RotateTemplateButton" to="." method="_on_rotate_template_pressed"]
 [connection signal="pressed" from="UI/MarginContainer/VBoxContainer/PlacementButtons/PlaceTemplateButton" to="." method="_on_place_template_pressed"]
+[connection signal="item_selected" from="UI/MarginContainer/VBoxContainer/BuildingAssignmentList" to="." method="_on_building_assignment_list_item_selected"]
+[connection signal="item_selected" from="UI/MarginContainer/VBoxContainer/VillagerAssignList" to="." method="_on_villager_assign_list_item_selected"]
+[connection signal="pressed" from="UI/MarginContainer/VBoxContainer/AssignVillagerButton" to="." method="_on_assign_villager_button_pressed"]
 [connection signal="pressed" from="UI/MarginContainer/VBoxContainer/Buttons/ToMenuButton" to="." method="_on_back_to_menu_pressed"]
 [connection signal="pressed" from="UI/MarginContainer/VBoxContainer/Buttons/ToTemplateButton" to="." method="_on_open_template_builder_pressed"]

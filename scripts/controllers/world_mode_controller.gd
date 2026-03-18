@@ -13,8 +13,12 @@ const BLOCK_CATALOG: Array[Dictionary] = [
 ]
 
 @onready var _status_label: Label = %StatusLabel
+@onready var _population_label: Label = %PopulationLabel
 @onready var _placement_label: Label = %PlacementLabel
 @onready var _library_list: ItemList = %TemplateLibraryList
+@onready var _building_list: ItemList = %BuildingAssignmentList
+@onready var _building_info_label: Label = %BuildingAssignmentInfoLabel
+@onready var _villager_list: ItemList = %VillagerAssignList
 @onready var _camera: Camera3D = %WorldCamera
 @onready var _renderer: GridMapBlockRenderer = %GridRenderer
 @onready var _ghost_root: Node3D = %GhostRoot
@@ -27,11 +31,17 @@ var _ghost_preview_entries: Array[Dictionary] = []
 var _ghost_valid: bool = false
 var _ghost_mesh_nodes: Array[Node3D] = []
 
+var _selected_building_index: int = -1
+var _selected_assignable_index: int = -1
+var _assignable_villager_ids: Array[int] = []
+
 func _ready() -> void:
 	var village := AppServices.session.village
 	village.seed = Time.get_unix_time_from_system()
 	village.placed_blocks = AppServices.world_generation.generate_height_map(MAP_WIDTH, MAP_DEPTH, village.seed)
 	village.placed_buildings.clear()
+	village.villagers.clear()
+	village.worker_assignments.clear()
 
 	var world_state := AppServices.session.world_voxel_state
 	world_state.cells = village.placed_blocks.duplicate(true)
@@ -40,6 +50,7 @@ func _ready() -> void:
 	_renderer.configure(BLOCK_CATALOG)
 	_renderer.render_full(world_state)
 	_refresh_template_library()
+	_refresh_assignment_ui()
 	_update_status()
 	_set_placement_message("Choisissez un template, tournez-le (R), puis posez-le (Entrée ou bouton).", Color(0.82, 0.87, 0.92))
 
@@ -85,6 +96,36 @@ func _on_rotate_template_pressed() -> void:
 func _on_place_template_pressed() -> void:
 	_place_selected_template()
 
+func _on_building_assignment_list_item_selected(index: int) -> void:
+	_selected_building_index = index
+	_selected_assignable_index = -1
+	_refresh_assignment_ui()
+
+func _on_villager_assign_list_item_selected(index: int) -> void:
+	_selected_assignable_index = index
+
+func _on_assign_villager_button_pressed() -> void:
+	var village := AppServices.session.village
+	var work_buildings := _work_buildings()
+	if _selected_building_index < 0 or _selected_building_index >= work_buildings.size():
+		_set_placement_message("Sélectionnez un bâtiment pour l'affectation.", Color(0.95, 0.5, 0.45))
+		return
+	if _selected_assignable_index < 0 or _selected_assignable_index >= _assignable_villager_ids.size():
+		_set_placement_message("Sélectionnez un villageois libre.", Color(0.95, 0.5, 0.45))
+		return
+
+	var selected_building: BuildingInstance = work_buildings[_selected_building_index]
+	var villager_id := _assignable_villager_ids[_selected_assignable_index]
+	var result := AppServices.population.assign_villager(village, villager_id, selected_building.id)
+	if result.get("ok", false):
+		_set_placement_message("Villageois %d affecté à %s." % [villager_id, selected_building.template_name], Color(0.52, 0.9, 0.58))
+	else:
+		_set_placement_message(String(result.get("error", "Affectation impossible.")), Color(0.95, 0.5, 0.45))
+
+	_selected_assignable_index = -1
+	_refresh_assignment_ui()
+	_update_status()
+
 func _refresh_template_library() -> void:
 	_library_list.clear()
 	for template in AppServices.session.template_catalog.templates:
@@ -92,6 +133,7 @@ func _refresh_template_library() -> void:
 
 func _update_status() -> void:
 	var selected_name := _selected_template.display_name if _selected_template != null else "Aucun"
+	var population_stats := AppServices.population.get_population_stats(AppServices.session.village)
 	_status_label.text = "World %dx%d | Templates: %d | Sélection: %s | Rotation: %d° | Bâtiments posés: %d" % [
 		MAP_WIDTH,
 		MAP_DEPTH,
@@ -100,6 +142,80 @@ func _update_status() -> void:
 		_rotation_index * 90,
 		AppServices.session.village.placed_buildings.size(),
 	]
+	_population_label.text = "Population totale: %d | Assignée: %d | Libre: %d" % [
+		population_stats.get("total", 0),
+		population_stats.get("assigned", 0),
+		population_stats.get("free", 0),
+	]
+
+func _refresh_assignment_ui() -> void:
+	_refresh_building_list()
+	_refresh_assignable_villagers()
+	_update_status()
+
+func _refresh_building_list() -> void:
+	var village := AppServices.session.village
+	_building_list.clear()
+	for building in village.placed_buildings:
+		var capacity := max(building.worker_capacity, AppServices.population.worker_capacity_for_building(building))
+		building.worker_capacity = capacity
+		if capacity <= 0:
+			continue
+		_building_list.add_item("%s [%d/%d]" % [
+			building.template_name,
+			building.assigned_worker_ids.size(),
+			capacity,
+		])
+
+	if _building_list.item_count == 0:
+		_selected_building_index = -1
+		_building_info_label.text = "Aucun bâtiment avec postes de travail disponible."
+		return
+
+	if _selected_building_index < 0 or _selected_building_index >= _building_list.item_count:
+		_selected_building_index = 0
+	_building_list.select(_selected_building_index)
+
+	var selected := _work_buildings()[_selected_building_index]
+	_building_info_label.text = "%s (capacité %d, assignés %d)" % [
+		selected.template_name,
+		selected.worker_capacity,
+		selected.assigned_worker_ids.size(),
+	]
+
+func _refresh_assignable_villagers() -> void:
+	_assignable_villager_ids.clear()
+	_villager_list.clear()
+
+	var work_buildings := _work_buildings()
+	if _selected_building_index < 0 or _selected_building_index >= work_buildings.size():
+		return
+
+	var village := AppServices.session.village
+	for villager in village.villagers:
+		if villager.assigned_building_id != &"":
+			continue
+		_assignable_villager_ids.append(villager.id)
+		_villager_list.add_item("%s [%s]" % [villager.display_name, String(villager.state)])
+
+	if _assignable_villager_ids.is_empty():
+		_villager_list.add_item("Aucun villageois libre")
+		_selected_assignable_index = -1
+		return
+
+	if _selected_assignable_index < 0 or _selected_assignable_index >= _assignable_villager_ids.size():
+		_selected_assignable_index = 0
+	_villager_list.select(_selected_assignable_index)
+
+func _work_buildings() -> Array[BuildingInstance]:
+	var result: Array[BuildingInstance] = []
+	for building in AppServices.session.village.placed_buildings:
+		var capacity := max(building.worker_capacity, AppServices.population.worker_capacity_for_building(building))
+		if capacity <= 0:
+			continue
+		building.worker_capacity = capacity
+		result.append(building)
+	return result
 
 func _update_ghost_preview() -> void:
 	if _selected_template == null:
@@ -220,9 +336,15 @@ func _place_selected_template() -> void:
 		transformed_blocks,
 		transformed_objects
 	)
+	instance.worker_capacity = AppServices.population.worker_capacity_for_building(instance)
 	village.placed_buildings.append(instance)
 
+	var spawned_villagers := AppServices.population.spawn_villagers_for_house(instance, village.villagers)
+	for villager in spawned_villagers:
+		village.villagers.append(villager)
+
 	_renderer.render_full(world_state)
+	_refresh_assignment_ui()
 	_update_status()
 	_set_placement_message("Template '%s' posé avec succès." % [_selected_template.display_name], Color(0.52, 0.9, 0.58))
 	_update_ghost_preview()
