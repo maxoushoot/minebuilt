@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="FunctionalObjectDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/definitions/functional_object_definition.gd" id="1_obj_def"]
+
+[resource]
+script = ExtResource("1_obj_def")
+id = &"stockage_basic"
+display_name = "Stockage"
+category = &"stockage"
+footprint_cells = Vector3i(1, 1, 1)
