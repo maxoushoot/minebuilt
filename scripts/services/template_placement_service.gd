@@ -92,6 +92,7 @@ func create_building_instance(
 	instance.id = StringName("building_%s_%d" % [String(template.id), Time.get_unix_time_from_system()])
 	instance.template_id = template.id
 	instance.template_name = template.display_name
+	instance.archetype_id = template.archetype_id
 	instance.origin_cell = origin
 	instance.rotation = posmod(rotation, 4)
 	instance.block_instances = block_instances.duplicate(true)
