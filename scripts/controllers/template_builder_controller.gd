@@ -327,6 +327,15 @@ func _build_runtime_template(id_suffix: String) -> BuildingTemplateDefinition:
 	template.display_name = id_suffix
 	template.archetype_id = _selected_archetype.id if _selected_archetype else &""
 	template.block_cells = _build_state.cells.keys()
+	template.block_instances = []
+	for cell_key in _build_state.cells.keys():
+		var cell: Vector3i = cell_key
+		var cell_data: Dictionary = _build_state.cells[cell]
+		template.block_instances.append({
+			"cell": cell,
+			"block_id": cell_data.get("block_id", &"grass"),
+			"rotation": int(cell_data.get("rotation", 0)),
+		})
 	template.object_instances = _object_entries.duplicate(true)
 	template.object_placements = {}
 	for entry in _object_entries:

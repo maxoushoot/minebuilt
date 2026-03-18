@@ -1,17 +1,48 @@
-[gd_scene load_steps=2 format=3 uid="uid://world_mode"]
+[gd_scene load_steps=4 format=3 uid="uid://world_mode"]
 
 [ext_resource type="Script" path="res://scripts/controllers/world_mode_controller.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/rendering/gridmap_block_renderer.gd" id="2_grid_renderer"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ground"]
+size = Vector2(64, 64)
 
 [node name="WorldMode" type="Node3D"]
 script = ExtResource("1_script")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 0, 0, 0)
+shadow_enabled = true
+
+[node name="WorldCamera" type="Camera3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 0.829038, 0.559193, 0, -0.559193, 0.829038, 30, 26, 30)
+current = true
+
+[node name="GridRenderer" type="Node3D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("2_grid_renderer")
+
+[node name="GridMap" type="GridMap" parent="GridRenderer"]
+unique_name_in_owner = true
+cell_size = Vector3(1, 1, 1)
+
+[node name="GhostMesh" type="MeshInstance3D" parent="GridRenderer"]
+unique_name_in_owner = true
+visible = false
+
+[node name="GhostRoot" type="Node3D" parent="."]
+unique_name_in_owner = true
+
+[node name="GroundPlane" type="MeshInstance3D" parent="."]
+mesh = SubResource("PlaneMesh_ground")
 
 [node name="UI" type="CanvasLayer" parent="."]
 
 [node name="MarginContainer" type="MarginContainer" parent="UI"]
 offset_left = 16.0
 offset_top = 16.0
-offset_right = 560.0
-offset_bottom = 160.0
+offset_right = 700.0
+offset_bottom = 820.0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="UI/MarginContainer"]
 layout_mode = 2
@@ -20,6 +51,32 @@ layout_mode = 2
 unique_name_in_owner = true
 layout_mode = 2
 text = "Generating world..."
+
+[node name="PlacementLabel" type="Label" parent="UI/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Placement status"
+autowrap_mode = 2
+
+[node name="LibraryTitle" type="Label" parent="UI/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Template library"
+
+[node name="TemplateLibraryList" type="ItemList" parent="UI/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 280)
+layout_mode = 2
+
+[node name="PlacementButtons" type="HBoxContainer" parent="UI/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="RotateTemplateButton" type="Button" parent="UI/MarginContainer/VBoxContainer/PlacementButtons"]
+layout_mode = 2
+text = "Rotate 90°"
+
+[node name="PlaceTemplateButton" type="Button" parent="UI/MarginContainer/VBoxContainer/PlacementButtons"]
+layout_mode = 2
+text = "Place Template"
 
 [node name="Buttons" type="HBoxContainer" parent="UI/MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -32,5 +89,8 @@ text = "Back to Menu"
 layout_mode = 2
 text = "Template Builder"
 
+[connection signal="item_selected" from="UI/MarginContainer/VBoxContainer/TemplateLibraryList" to="." method="_on_template_library_list_item_selected"]
+[connection signal="pressed" from="UI/MarginContainer/VBoxContainer/PlacementButtons/RotateTemplateButton" to="." method="_on_rotate_template_pressed"]
+[connection signal="pressed" from="UI/MarginContainer/VBoxContainer/PlacementButtons/PlaceTemplateButton" to="." method="_on_place_template_pressed"]
 [connection signal="pressed" from="UI/MarginContainer/VBoxContainer/Buttons/ToMenuButton" to="." method="_on_back_to_menu_pressed"]
 [connection signal="pressed" from="UI/MarginContainer/VBoxContainer/Buttons/ToTemplateButton" to="." method="_on_open_template_builder_pressed"]
