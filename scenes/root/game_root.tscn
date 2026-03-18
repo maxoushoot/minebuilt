@@ -1,0 +1,17 @@
+[gd_scene load_steps=5 format=3 uid="uid://game_root"]
+
+[ext_resource type="Script" path="res://scripts/controllers/game_root_controller.gd" id="1_root_script"]
+[ext_resource type="PackedScene" path="res://scenes/menu/main_menu.tscn" id="2_menu"]
+[ext_resource type="PackedScene" path="res://scenes/world/world_mode.tscn" id="3_world"]
+[ext_resource type="PackedScene" path="res://scenes/template_builder/template_builder_mode.tscn" id="4_template"]
+[ext_resource type="PackedScene" path="res://scenes/immersion/immersion_mode.tscn" id="5_immersion"]
+
+[node name="GameRoot" type="Node"]
+script = ExtResource("1_root_script")
+menu_scene = ExtResource("2_menu")
+world_scene = ExtResource("3_world")
+template_builder_scene = ExtResource("4_template")
+immersion_scene = ExtResource("5_immersion")
+
+[node name="Content" type="Node" parent="."]
+unique_name_in_owner = true
