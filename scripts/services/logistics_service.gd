@@ -26,7 +26,7 @@ func reset_runtime() -> void:
 	_production_elapsed = 0.0
 	_path_progress_by_villager.clear()
 
-func initialize_village_logistics(village: VillageState) -> void:
+func initialize_village_logistics(village: VillageState, pathfinding: GridPathfindingService = null) -> void:
 	if village == null:
 		return
 
@@ -36,7 +36,7 @@ func initialize_village_logistics(village: VillageState) -> void:
 	for villager in village.villagers:
 		if villager.current_cell == Vector3i.ZERO:
 			var home := _find_building(village.placed_buildings, villager.home_building_id)
-			villager.current_cell = _building_anchor_cell(home)
+			villager.current_cell = _building_anchor_cell(home, pathfinding, villager.current_cell)
 		villager.path_cells.clear()
 		villager.carry_resource = &""
 		villager.carry_units = 0
@@ -46,7 +46,7 @@ func tick(village: VillageState, pathfinding: GridPathfindingService, delta: flo
 	if village == null:
 		return {"moves": 0, "deliveries": 0}
 
-	initialize_village_logistics(village)
+	initialize_village_logistics(village, pathfinding)
 	_produce(village, delta)
 
 	var deliveries := 0
@@ -86,7 +86,7 @@ func _try_assign_job(village: VillageState, villager: VillagerRuntimeData, pathf
 	villager.carry_resource = &""
 	villager.carry_units = 0
 	villager.state = VillagerRuntimeData.STATE_TRANSPORTING
-	var source_cell := _building_anchor_cell(job.get("source"))
+	var source_cell := _building_anchor_cell(job.get("source"), pathfinding, villager.current_cell)
 	_set_path(villager, pathfinding, source_cell)
 
 func _select_job(village: VillageState) -> Dictionary:
@@ -175,7 +175,7 @@ func _try_resolve_arrival(village: VillageState, villager: VillagerRuntimeData, 
 		villager.carry_resource = resource
 		villager.carry_units = picked_units
 		villager.logistics_job["phase"] = "to_destination"
-		var destination_cell := _building_anchor_cell(destination)
+		var destination_cell := _building_anchor_cell(destination, pathfinding, villager.current_cell)
 		_set_path(villager, pathfinding, destination_cell)
 		return false
 
@@ -229,9 +229,11 @@ func _find_building(buildings: Array[BuildingInstance], building_id: StringName)
 			return building
 	return null
 
-func _building_anchor_cell(building: BuildingInstance) -> Vector3i:
+func _building_anchor_cell(building: BuildingInstance, pathfinding: GridPathfindingService, from_cell: Vector3i) -> Vector3i:
 	if building == null:
 		return Vector3i.ZERO
+	if pathfinding != null:
+		return pathfinding.get_accessible_cell_for_building(building, from_cell)
 	if not building.block_instances.is_empty():
 		return building.block_instances[0].get("cell", building.origin_cell)
 	return building.origin_cell
