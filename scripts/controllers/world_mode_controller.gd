@@ -243,22 +243,22 @@ func _update_ghost_preview() -> void:
 	var base_height := _surface_height_at(target_x, target_z)
 	_ghost_origin = Vector3i(target_x, base_height + 1, target_z)
 
-	var world_state := AppServices.session.world_voxel_state
-	var evaluation := AppServices.template_placement.evaluate_placement(
+	var evaluation_result := AppServices.evaluate_template_placement_use_case.execute(
+		AppServices.session,
 		_selected_template,
-		world_state,
 		_ghost_origin,
 		_rotation_index,
 		WORLD_BOUNDS
 	)
-	_ghost_preview_entries = evaluation.get("block_instances", [])
-	_ghost_valid = evaluation.get("is_valid", false)
+	var payload: Dictionary = evaluation_result.get("payload", {})
+	_ghost_preview_entries = payload.get("block_instances", [])
+	_ghost_valid = evaluation_result.get("success", false)
 	_render_ghost_preview(_ghost_preview_entries, _ghost_valid)
 
 	if _ghost_valid:
 		_set_placement_message("Zone valide. Placement possible.", Color(0.52, 0.9, 0.58))
 	else:
-		var errors: Array = evaluation.get("errors", [])
+		var errors: Array = payload.get("errors", [])
 		if errors.is_empty():
 			_set_placement_message("Zone invalide.", Color(0.95, 0.5, 0.45))
 		else:
