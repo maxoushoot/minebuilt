@@ -2,6 +2,7 @@ extends RefCounted
 class_name ApplyTemplatePlacementUseCase
 
 var _population: PopulationService
+var _evaluate_placement: EvaluateTemplatePlacementUseCase
 var _template_placement: TemplatePlacementService
 var _block_placement: BlockPlacementService
 var _pathfinding: GridPathfindingService
@@ -10,6 +11,7 @@ var _session_runtime: SessionRuntimeService
 
 func setup(
 	population: PopulationService,
+	evaluate_placement: EvaluateTemplatePlacementUseCase,
 	template_placement: TemplatePlacementService,
 	block_placement: BlockPlacementService,
 	pathfinding: GridPathfindingService,
@@ -17,6 +19,7 @@ func setup(
 	session_runtime: SessionRuntimeService
 ) -> ApplyTemplatePlacementUseCase:
 	_population = population
+	_evaluate_placement = evaluate_placement
 	_template_placement = template_placement
 	_block_placement = block_placement
 	_pathfinding = pathfinding
@@ -40,14 +43,14 @@ func execute(
 
 	var village := session.village
 	var world_state := session.world_voxel_state
-	var evaluation := _template_placement.evaluate_placement(template, world_state, origin, rotation, world_bounds)
-	if not evaluation.get("is_valid", false):
+	var evaluation_result := _evaluate_placement.execute(session, template, origin, rotation, world_bounds)
+	if not evaluation_result.get("success", false):
 		return UseCaseResultFactory.failure(&"placement_invalid", "Placement refusé: collisions ou hors limites.", {
-			"errors": evaluation.get("errors", []),
+			"errors": evaluation_result.get("payload", {}).get("errors", []),
 		})
 
-	var transformed_blocks: Array[Dictionary] = evaluation.get("block_instances", [])
-	var transformed_objects: Array[Dictionary] = evaluation.get("object_instances", [])
+	var transformed_blocks: Array[Dictionary] = evaluation_result.get("payload", {}).get("block_instances", [])
+	var transformed_objects: Array[Dictionary] = evaluation_result.get("payload", {}).get("object_instances", [])
 	for entry in transformed_blocks:
 		var cell: Vector3i = entry.get("cell", Vector3i.ZERO)
 		var block_id: StringName = entry.get("block_id", &"grass")
@@ -82,6 +85,7 @@ func execute(
 func _has_dependencies() -> bool:
 	return (
 		_population != null
+		and _evaluate_placement != null
 		and _template_placement != null
 		and _block_placement != null
 		and _pathfinding != null

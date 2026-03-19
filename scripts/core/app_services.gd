@@ -14,6 +14,7 @@ var block_placement: BlockPlacementService
 var template_placement: TemplatePlacementService
 var session_runtime: SessionRuntimeService
 var assign_villager_use_case: AssignVillagerUseCase
+var evaluate_template_placement_use_case: EvaluateTemplatePlacementUseCase
 var apply_template_placement_use_case: ApplyTemplatePlacementUseCase
 
 var session: GameSessionState
@@ -28,8 +29,10 @@ func _ready() -> void:
 	template_placement = TemplatePlacementService.new()
 	session_runtime = SessionRuntimeService.new().setup(world_generation, pathfinding, logistics)
 	assign_villager_use_case = AssignVillagerUseCase.new().setup(population)
+	evaluate_template_placement_use_case = EvaluateTemplatePlacementUseCase.new().setup(template_placement)
 	apply_template_placement_use_case = ApplyTemplatePlacementUseCase.new().setup(
 		population,
+		evaluate_template_placement_use_case,
 		template_placement,
 		block_placement,
 		pathfinding,
