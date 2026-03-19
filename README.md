@@ -30,3 +30,15 @@ Base technique Godot 4 pour un city-builder voxel orienté données, avec sépar
 ## Objectif actuel
 
 Ce repository fournit un squelette compilable et maintenable, prêt pour les prochaines briques (simulation détaillée, logistique complète, pathfinding avancé), sans implémenter ces systèmes dès maintenant.
+
+
+## Tests automatisés (headless)
+
+Le projet inclut un runner de tests GDScript minimal (`res://tests/test_runner.gd`) sans dépendance externe.
+
+- Lancer toute la suite:
+  - `godot4 --headless --path . --script res://tests/test_runner.gd`
+- Lancer un fichier précis:
+  - `godot4 --headless --path . --script res://tests/test_runner.gd -- --file=res://tests/cases/template_placement_use_cases_test.gd`
+- Lancer un sous-ensemble par filtre de nom de fichier:
+  - `godot4 --headless --path . --script res://tests/test_runner.gd -- --filter=integration`
