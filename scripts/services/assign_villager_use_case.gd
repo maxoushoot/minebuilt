@@ -9,19 +9,19 @@ func setup(population: PopulationService) -> AssignVillagerUseCase:
 
 func execute(village: VillageState, villager_id: int, building_instance_id: StringName) -> Dictionary:
 	if _population == null:
-		return _result(false, &"service_unavailable", "Service de population indisponible.")
+		return UseCaseResultFactory.failure(&"service_unavailable", "Service de population indisponible.")
 	if village == null:
-		return _result(false, &"village_missing", "Village introuvable.")
+		return UseCaseResultFactory.failure(&"village_missing", "Village introuvable.")
 	if building_instance_id == &"":
-		return _result(false, &"building_missing", "Bâtiment introuvable.")
+		return UseCaseResultFactory.failure(&"building_missing", "Bâtiment introuvable.")
 
 	var assign_result := _population.assign_villager(village, villager_id, building_instance_id)
 	if not assign_result.get("ok", false):
 		var error_message := String(assign_result.get("error", "Affectation impossible."))
-		return _result(false, &"assign_failed", error_message)
+		return UseCaseResultFactory.failure(&"assign_failed", error_message)
 
 	_validate_assignment_coherence(village, villager_id, building_instance_id)
-	return _result(true, &"assigned", "Villageois %d affecté." % villager_id, {
+	return UseCaseResultFactory.success(&"assigned", "Villageois %d affecté." % villager_id, {
 		"villager_id": villager_id,
 		"building_instance_id": building_instance_id,
 	})
@@ -63,10 +63,3 @@ func _find_building(buildings: Array[BuildingInstance], building_id: StringName)
 			return building
 	return null
 
-func _result(success: bool, code: StringName, message: String, payload: Dictionary = {}) -> Dictionary:
-	return {
-		"success": success,
-		"code": code,
-		"message": message,
-		"payload": payload,
-	}
