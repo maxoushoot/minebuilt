@@ -1,3 +1,13 @@
+# WorldModeController
+# -----------------------------------------------------------------------------
+# Architecture role: Controller (UI/input orchestration only).
+# Responsibilities:
+# - Orchestrates world-mode user input and view feedback.
+# - Delegates business operations to use cases/services.
+# - Renders placement preview and assignment/logistics UI state.
+# Guardrail:
+# - Business/domain logic must remain in services/use cases; this controller
+#   should only coordinate flow: input -> validation/use case -> UI feedback.
 extends Node3D
 class_name WorldModeController
 
@@ -38,6 +48,10 @@ var _selected_assignable_index: int = -1
 var _assignable_villager_ids: Array[int] = []
 var _villager_actor_nodes: Dictionary = {}
 
+# World mode bootstrap flow:
+# - Bootstrap runtime.
+# - Render world.
+# - Initialize UI and assignment panels.
 func _ready() -> void:
 	AppServices.session_runtime.bootstrap_world_runtime(AppServices.session, MAP_WIDTH, MAP_DEPTH, MAP_HEIGHT)
 
@@ -49,6 +63,9 @@ func _ready() -> void:
 	_update_status()
 	_set_placement_message("Choisissez un template, tournez-le (R), puis posez-le (Entrée ou bouton).", Color(0.82, 0.87, 0.92))
 
+# Per-frame orchestration:
+# - Update placement preview from cursor.
+# - Advance logistics simulation and refresh visuals if needed.
 func _process(_delta: float) -> void:
 	_update_ghost_preview()
 	var village := AppServices.session.village
@@ -104,6 +121,7 @@ func _on_building_assignment_list_item_selected(index: int) -> void:
 func _on_villager_assign_list_item_selected(index: int) -> void:
 	_selected_assignable_index = index
 
+# Controller flow: user assignment input -> use case execution -> UI feedback.
 func _on_assign_villager_button_pressed() -> void:
 	var village := AppServices.session.village
 	var work_buildings := _work_buildings()
@@ -223,6 +241,8 @@ func _work_buildings() -> Array[BuildingInstance]:
 		result.append(building)
 	return result
 
+# Computes ghost placement by delegating authoritative validation to
+# EvaluateTemplatePlacementUseCase (preview stage).
 func _update_ghost_preview() -> void:
 	if _selected_template == null:
 		_clear_ghost_preview()
@@ -305,6 +325,8 @@ func _clear_ghost_preview() -> void:
 			node.queue_free()
 	_ghost_mesh_nodes.clear()
 
+# Apply flow: only executes when preview marked valid, then delegates to
+# ApplyTemplatePlacementUseCase which performs authoritative revalidation.
 func _place_selected_template() -> void:
 	if _selected_template == null:
 		_set_placement_message("Sélectionnez un template avant de poser.", Color(0.95, 0.5, 0.45))

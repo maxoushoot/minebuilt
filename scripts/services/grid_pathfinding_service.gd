@@ -1,3 +1,10 @@
+# GridPathfindingService
+# -----------------------------------------------------------------------------
+# Architecture role: Service (navigation graph and route queries).
+# Responsibilities:
+# - Maintains AStarGrid3D walkability/weight data from current runtime map.
+# - Rebuilds globally on bootstrap and incrementally on local map changes.
+# - Provides nearest accessible anchor for building interactions.
 extends RefCounted
 class_name GridPathfindingService
 
@@ -23,6 +30,7 @@ var _bounds := Rect3i()
 var _walkable_by_cell: Dictionary = {}
 var _cost_by_cell: Dictionary = {}
 
+# Configures navigation region and clears runtime caches.
 func configure(bounds: Rect3i) -> void:
 	_bounds = bounds
 	_astar.region = bounds
@@ -32,6 +40,7 @@ func configure(bounds: Rect3i) -> void:
 	_walkable_by_cell.clear()
 	_cost_by_cell.clear()
 
+# Full graph rebuild used during world bootstrap/reset.
 func rebuild_navigation_graph(world_state: VoxelBuildState, placed_buildings: Array[BuildingInstance]) -> void:
 	var blocked_cells := _collect_blocked_building_cells(placed_buildings)
 	var road_cells := _collect_road_cells(world_state, placed_buildings)
@@ -40,6 +49,7 @@ func rebuild_navigation_graph(world_state: VoxelBuildState, placed_buildings: Ar
 			for z in range(_bounds.position.z, _bounds.end.z):
 				_recompute_cell(Vector3i(x, y, z), world_state, blocked_cells, road_cells)
 
+# Incremental graph update used after local placement operations.
 func apply_local_map_update(changed_cells: Array[Vector3i], world_state: VoxelBuildState, placed_buildings: Array[BuildingInstance]) -> void:
 	if changed_cells.is_empty():
 		return
@@ -52,6 +62,7 @@ func apply_local_map_update(changed_cells: Array[Vector3i], world_state: VoxelBu
 func is_cell_walkable(cell: Vector3i) -> bool:
 	return bool(_walkable_by_cell.get(cell, false))
 
+# Returns best navigable interaction cell for a building from a source cell.
 func get_accessible_cell_for_building(building: BuildingInstance, from_cell: Vector3i) -> Vector3i:
 	if building == null:
 		return from_cell
@@ -83,6 +94,7 @@ func get_accessible_cell_for_building(building: BuildingInstance, from_cell: Vec
 
 	return best_cell
 
+# Wrapper around AStarGrid3D id path query with bounds guard.
 func get_id_path(from_cell: Vector3i, to_cell: Vector3i) -> Array[Vector3i]:
 	if not _astar.is_in_boundsv(from_cell) or not _astar.is_in_boundsv(to_cell):
 		return []

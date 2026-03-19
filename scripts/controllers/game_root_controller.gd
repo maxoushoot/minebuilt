@@ -1,3 +1,10 @@
+# GameRootController
+# -----------------------------------------------------------------------------
+# Architecture role: Controller (top-level scene router).
+# Responsibilities:
+# - Listens to AppState mode transitions.
+# - Instantiates the scene matching the active mode.
+# - Ensures only one mode scene is active at a time.
 extends Node
 class_name GameRootController
 
@@ -10,6 +17,7 @@ class_name GameRootController
 
 var _active_scene: Node
 
+# Subscribes to global mode changes and initializes first scene.
 func _ready() -> void:
 	AppState.mode_changed.connect(_on_mode_changed)
 	_switch_to(AppState.current_mode)
@@ -17,6 +25,7 @@ func _ready() -> void:
 func _on_mode_changed(_previous_mode: StringName, next_mode: StringName) -> void:
 	_switch_to(next_mode)
 
+# Replaces current mode scene with the scene configured for the target mode.
 func _switch_to(mode: StringName) -> void:
 	if _active_scene:
 		_active_scene.queue_free()

@@ -1,3 +1,9 @@
+# BuildingTemplateDefinition
+# -----------------------------------------------------------------------------
+# Architecture role: Data Definition (template authoring artifact).
+# Responsibilities:
+# - Describes reusable building shape and functional object placements.
+# - Supports legacy object_placements and V1 object_instances formats.
 extends Resource
 class_name BuildingTemplateDefinition
 

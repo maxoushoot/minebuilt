@@ -1,3 +1,12 @@
+# VillagerRuntimeData
+# -----------------------------------------------------------------------------
+# Architecture role: Runtime Data (canonical villager simulation state).
+# Responsibilities:
+# - Stores assignment status and locomotion/logistics runtime fields.
+# - Bridges population assignment flow and logistics tick progression.
+# Lifecycle:
+# - Spawned primarily from PopulationService when houses are placed.
+# - Mutated by assignment use cases and LogisticsService ticks.
 extends Resource
 class_name VillagerRuntimeData
 

@@ -1,6 +1,14 @@
+# WorldGenerationService
+# -----------------------------------------------------------------------------
+# Architecture role: Service (procedural bootstrap data generation).
+# Responsibilities:
+# - Generates initial terrain voxel dictionary for world runtime bootstrap.
+# - Applies a simple deterministic river pass from session seed.
 extends RefCounted
 class_name WorldGenerationService
 
+# Produces initial world voxel cells dictionary.
+# Side effects: none (pure generation).
 func generate_height_map(width: int, depth: int, seed: int) -> Dictionary:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
@@ -17,6 +25,7 @@ func generate_height_map(width: int, depth: int, seed: int) -> Dictionary:
 	_apply_simple_river(map, width, depth, rng)
 	return map
 
+# Applies a thin river corridor on top of generated base terrain.
 func _apply_simple_river(map: Dictionary, width: int, depth: int, rng: RandomNumberGenerator) -> void:
 	var river_x := rng.randi_range(width / 4, width * 3 / 4)
 	for z in depth:

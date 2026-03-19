@@ -1,3 +1,8 @@
+# TemplateArchetypeDefinition
+# -----------------------------------------------------------------------------
+# Architecture role: Data Definition (validation rule profile).
+# Responsibilities:
+# - Defines high-level archetype constraints used by template validation.
 extends Resource
 class_name TemplateArchetypeDefinition
 

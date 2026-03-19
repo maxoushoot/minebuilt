@@ -1,3 +1,17 @@
+# GameSessionState
+# -----------------------------------------------------------------------------
+# Architecture role: Runtime Data (session root, canonical ownership boundary).
+# Responsibilities:
+# - Groups the mutable runtime state for a play session.
+# - Exposes canonical world voxels and template-builder voxels as separate
+#   stores to avoid cross-mode coupling.
+# - Provides access to village-level simulation state and template catalog data.
+# Dependencies:
+# - VillageState, TemplateCatalogState, VoxelBuildState.
+# Canonical vs transient:
+# - world_voxel_state and template_voxel_state are canonical voxel stores.
+# - Any compatibility mirrors (ex: VillageState.placed_blocks) are derived from
+#   these canonical structures and must be synchronized externally.
 extends Resource
 class_name GameSessionState
 

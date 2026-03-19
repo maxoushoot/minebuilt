@@ -1,3 +1,13 @@
+# LogisticsService
+# -----------------------------------------------------------------------------
+# Architecture role: Service (runtime production + transport simulation).
+# Responsibilities:
+# - Produces resources from workered producer buildings.
+# - Assigns transport jobs to villagers and advances movement over paths.
+# - Resolves pickup/delivery and synchronizes global transient stock aggregate.
+# Canonical vs transient:
+# - Canonical per-building stocks: BuildingInstance.local_stocks.
+# - Transient aggregate mirror: VillageState.resource_stocks (derived each tick).
 extends RefCounted
 class_name LogisticsService
 
@@ -22,10 +32,12 @@ const HOUSE_TARGET_STOCK := 8
 var _production_elapsed := 0.0
 var _path_progress_by_villager: Dictionary = {}
 
+# Clears internal simulation timers/caches when runtime resets.
 func reset_runtime() -> void:
 	_production_elapsed = 0.0
 	_path_progress_by_villager.clear()
 
+# Ensures stock dictionaries and initial villager anchor cells are initialized.
 func initialize_village_logistics(village: VillageState, pathfinding: GridPathfindingService = null) -> void:
 	if village == null:
 		return
@@ -38,6 +50,11 @@ func initialize_village_logistics(village: VillageState, pathfinding: GridPathfi
 			var home := _find_building(village.placed_buildings, villager.home_building_id)
 			villager.current_cell = _building_anchor_cell(home, pathfinding, villager.current_cell)
 
+# Advances one logistics simulation tick.
+# Side effects:
+# - Mutates villager jobs, positions, carried resources, and states.
+# - Mutates building local stocks through production and deliveries.
+# - Recomputes village.resource_stocks aggregate mirror.
 func tick(village: VillageState, pathfinding: GridPathfindingService, delta: float) -> Dictionary:
 	if village == null:
 		return {"moves": 0, "deliveries": 0}
@@ -59,6 +76,7 @@ func tick(village: VillageState, pathfinding: GridPathfindingService, delta: flo
 	_sync_global_stocks(village)
 	return {"moves": moves, "deliveries": deliveries}
 
+# Producer loop: periodically injects resources into building local stocks.
 func _produce(village: VillageState, delta: float) -> void:
 	_production_elapsed += delta
 	if _production_elapsed < PRODUCE_INTERVAL_SEC:
@@ -72,6 +90,7 @@ func _produce(village: VillageState, delta: float) -> void:
 		var workers := max(building.assigned_worker_ids.size(), 1)
 		building.local_stocks[resource] = int(building.local_stocks.get(resource, 0)) + workers
 
+# Assigns a logistics job to a villager if one is available.
 func _try_assign_job(village: VillageState, villager: VillagerRuntimeData, pathfinding: GridPathfindingService) -> void:
 	var job := _select_job(village)
 	if job.is_empty():
@@ -85,6 +104,9 @@ func _try_assign_job(village: VillageState, villager: VillagerRuntimeData, pathf
 	var source_cell := _building_anchor_cell(job.get("source"), pathfinding, villager.current_cell)
 	_set_path(villager, pathfinding, source_cell)
 
+# Job selection priority:
+# 1) Producer -> Market replenishment.
+# 2) Market -> House distribution toward target stock.
 func _select_job(village: VillageState) -> Dictionary:
 	var market := _first_building_by_archetype(village.placed_buildings, &"market")
 	if market == null:
@@ -201,6 +223,7 @@ func _clear_villager_job(villager: VillagerRuntimeData) -> void:
 	villager.state = VillagerRuntimeData.STATE_IDLE
 	_path_progress_by_villager.erase(villager.id)
 
+# Rebuilds transient global stocks from canonical per-building local stocks.
 func _sync_global_stocks(village: VillageState) -> void:
 	var totals := {
 		"food": 0,

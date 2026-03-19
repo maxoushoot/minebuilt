@@ -1,3 +1,10 @@
+# AppServices
+# -----------------------------------------------------------------------------
+# Architecture role: Core System (composition root / service locator).
+# Responsibilities:
+# - Instantiates and wires runtime services + use cases once.
+# - Owns current GameSessionState and provides session reset entrypoint.
+# - Seeds default template catalog into each new session.
 extends Node
 class_name AppServices
 
@@ -19,6 +26,7 @@ var apply_template_placement_use_case: ApplyTemplatePlacementUseCase
 
 var session: GameSessionState
 
+# Initializes dependency graph used by controllers.
 func _ready() -> void:
 	world_generation = WorldGenerationService.new()
 	pathfinding = GridPathfindingService.new()
@@ -41,9 +49,11 @@ func _ready() -> void:
 	)
 	session = _build_default_session()
 
+# Recreates session runtime containers while preserving service singletons.
 func reset_session() -> void:
 	session = _build_default_session()
 
+# Builds a new default session with duplicated starter templates.
 func _build_default_session() -> GameSessionState:
 	var new_session := GameSessionState.new()
 	new_session.template_catalog.templates = [

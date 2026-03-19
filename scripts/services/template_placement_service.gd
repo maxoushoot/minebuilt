@@ -1,8 +1,22 @@
+# TemplatePlacementService
+# -----------------------------------------------------------------------------
+# Architecture role: Service (pure placement transformation + validation).
+# Responsibilities:
+# - Converts template-local cells into world-space instances.
+# - Evaluates bounds/collision validity against canonical voxel state.
+# - Creates BuildingInstance runtime entities from transformed data.
+# Side effects:
+# - None; all methods are pure computations/object construction.
 extends RefCounted
 class_name TemplatePlacementService
 
 const DEFAULT_BLOCK_ID := &"grass"
 
+# Evaluates if a template can be placed in world bounds without collisions.
+# Output fields:
+# - is_valid: true when no errors were found.
+# - errors: human-readable validation reasons.
+# - block_instances/object_instances: transformed world-space entries.
 func evaluate_placement(
 	template: BuildingTemplateDefinition,
 	state: VoxelBuildState,
@@ -35,6 +49,7 @@ func evaluate_placement(
 		"object_instances": transformed_object_instances(template, origin, rotation),
 	}
 
+# Builds transformed world-space block entries from template-local cells.
 func transformed_block_instances(
 	template: BuildingTemplateDefinition,
 	origin: Vector3i,
@@ -63,6 +78,7 @@ func transformed_block_instances(
 		})
 	return transformed
 
+# Builds transformed world-space functional object entries.
 func transformed_object_instances(
 	template: BuildingTemplateDefinition,
 	origin: Vector3i,
@@ -81,6 +97,7 @@ func transformed_object_instances(
 		})
 	return transformed
 
+# Creates a canonical BuildingInstance from transformed placement data.
 func create_building_instance(
 	template: BuildingTemplateDefinition,
 	origin: Vector3i,
@@ -99,6 +116,7 @@ func create_building_instance(
 	instance.object_instances = object_instances.duplicate(true)
 	return instance
 
+# Rotates a local cell around Y axis in 90° increments.
 func rotate_cell_90(cell: Vector3i, rotation: int) -> Vector3i:
 	match posmod(rotation, 4):
 		0:
@@ -112,6 +130,7 @@ func rotate_cell_90(cell: Vector3i, rotation: int) -> Vector3i:
 		_:
 			return cell
 
+# Bounds check helper for placement validation.
 func _is_inside_bounds(cell: Vector3i, bounds: Vector3i) -> bool:
 	if cell.x < 0 or cell.y < 0 or cell.z < 0:
 		return false
