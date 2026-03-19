@@ -313,55 +313,22 @@ func _place_selected_template() -> void:
 		_set_placement_message("Placement refusé: zone invalide.", Color(0.95, 0.5, 0.45))
 		return
 
-	var world_state := AppServices.session.world_voxel_state
-	var evaluation := AppServices.template_placement.evaluate_placement(
+	var result := AppServices.apply_template_placement_use_case.execute(
+		AppServices.session,
 		_selected_template,
-		world_state,
 		_ghost_origin,
 		_rotation_index,
 		WORLD_BOUNDS
 	)
-	if not evaluation.get("is_valid", false):
-		_set_placement_message("Placement refusé: collisions ou hors limites.", Color(0.95, 0.5, 0.45))
+	if not result.get("success", false):
+		_set_placement_message(String(result.get("message", "Placement refusé.")), Color(0.95, 0.5, 0.45))
 		return
 
-	var transformed_blocks: Array[Dictionary] = evaluation.get("block_instances", [])
-	var transformed_objects: Array[Dictionary] = evaluation.get("object_instances", [])
-	for entry in transformed_blocks:
-		var cell: Vector3i = entry.get("cell", Vector3i.ZERO)
-		var block_id: StringName = entry.get("block_id", &"grass")
-		var rot: int = int(entry.get("rotation", 0))
-		AppServices.block_placement.place_block(world_state, cell, block_id, rot)
-
-	var village := AppServices.session.village
-	var instance := AppServices.template_placement.create_building_instance(
-		_selected_template,
-		_ghost_origin,
-		_rotation_index,
-		transformed_blocks,
-		transformed_objects
-	)
-	instance.worker_capacity = AppServices.population.worker_capacity_for_building(instance)
-	village.placed_buildings.append(instance)
-
-	var spawned_villagers := AppServices.population.spawn_villagers_for_house(instance, village.villagers)
-	for villager in spawned_villagers:
-		village.villagers.append(villager)
-
-	AppServices.pathfinding.apply_local_map_update(_extract_changed_cells(transformed_blocks), world_state, village.placed_buildings)
-	AppServices.logistics.initialize_village_logistics(village, AppServices.pathfinding)
-	AppServices.session_runtime.sync_transient_world_blocks(AppServices.session)
-	_renderer.render_full(world_state)
+	_renderer.render_full(AppServices.session.world_voxel_state)
 	_refresh_assignment_ui()
 	_update_status()
-	_set_placement_message("Template '%s' posé avec succès." % [_selected_template.display_name], Color(0.52, 0.9, 0.58))
+	_set_placement_message(String(result.get("message", "Placement réussi.")), Color(0.52, 0.9, 0.58))
 	_update_ghost_preview()
-
-func _extract_changed_cells(transformed_blocks: Array[Dictionary]) -> Array[Vector3i]:
-	var changed: Array[Vector3i] = []
-	for entry in transformed_blocks:
-		changed.append(entry.get("cell", Vector3i.ZERO))
-	return changed
 
 func _sync_villager_logistics_visuals() -> void:
 	var village := AppServices.session.village
