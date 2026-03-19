@@ -55,8 +55,8 @@ var _archetypes_by_index: Array[TemplateArchetypeDefinition] = []
 var _objects_by_index: Array[FunctionalObjectDefinition] = []
 
 func _ready() -> void:
+	AppServices.session_runtime.reset_template_builder_runtime(AppServices.session)
 	_build_state = AppServices.session.template_voxel_state
-	_build_state.cells.clear()
 	_object_entries.clear()
 	_object_nodes_by_cell.clear()
 	_build_layer = 0

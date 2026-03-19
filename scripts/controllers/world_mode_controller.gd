@@ -39,20 +39,9 @@ var _assignable_villager_ids: Array[int] = []
 var _villager_actor_nodes: Dictionary = {}
 
 func _ready() -> void:
-	var village := AppServices.session.village
-	village.seed = Time.get_unix_time_from_system()
-	village.placed_blocks = AppServices.world_generation.generate_height_map(MAP_WIDTH, MAP_DEPTH, village.seed)
-	village.placed_buildings.clear()
-	village.villagers.clear()
-	village.worker_assignments.clear()
-	village.resource_stocks = {"food": 0, "wood": 0, "materials": 0}
+	AppServices.session_runtime.bootstrap_world_runtime(AppServices.session, MAP_WIDTH, MAP_DEPTH, MAP_HEIGHT)
 
 	var world_state := AppServices.session.world_voxel_state
-	world_state.cells = village.placed_blocks.duplicate(true)
-
-	AppServices.pathfinding.configure(Rect3i(0, 0, 0, MAP_WIDTH, MAP_HEIGHT, MAP_DEPTH))
-	AppServices.pathfinding.rebuild_navigation_graph(world_state, village.placed_buildings)
-	AppServices.logistics.reset_runtime()
 	_renderer.configure(BLOCK_CATALOG)
 	_renderer.render_full(world_state)
 	_refresh_template_library()
@@ -127,11 +116,11 @@ func _on_assign_villager_button_pressed() -> void:
 
 	var selected_building: BuildingInstance = work_buildings[_selected_building_index]
 	var villager_id := _assignable_villager_ids[_selected_assignable_index]
-	var result := AppServices.population.assign_villager(village, villager_id, selected_building.id)
-	if result.get("ok", false):
+	var result := AppServices.assign_villager_use_case.execute(village, villager_id, selected_building.id)
+	if result.get("success", false):
 		_set_placement_message("Villageois %d affecté à %s." % [villager_id, selected_building.template_name], Color(0.52, 0.9, 0.58))
 	else:
-		_set_placement_message(String(result.get("error", "Affectation impossible.")), Color(0.95, 0.5, 0.45))
+		_set_placement_message(String(result.get("message", "Affectation impossible.")), Color(0.95, 0.5, 0.45))
 
 	_selected_assignable_index = -1
 	_refresh_assignment_ui()
@@ -345,7 +334,6 @@ func _place_selected_template() -> void:
 		AppServices.block_placement.place_block(world_state, cell, block_id, rot)
 
 	var village := AppServices.session.village
-	village.placed_blocks = world_state.cells.duplicate(true)
 	var instance := AppServices.template_placement.create_building_instance(
 		_selected_template,
 		_ghost_origin,
@@ -362,6 +350,7 @@ func _place_selected_template() -> void:
 
 	AppServices.pathfinding.apply_local_map_update(_extract_changed_cells(transformed_blocks), world_state, village.placed_buildings)
 	AppServices.logistics.initialize_village_logistics(village, AppServices.pathfinding)
+	AppServices.session_runtime.sync_transient_world_blocks(AppServices.session)
 	_renderer.render_full(world_state)
 	_refresh_assignment_ui()
 	_update_status()

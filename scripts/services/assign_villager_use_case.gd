@@ -1,0 +1,72 @@
+extends RefCounted
+class_name AssignVillagerUseCase
+
+var _population: PopulationService
+
+func setup(population: PopulationService) -> AssignVillagerUseCase:
+	_population = population
+	return self
+
+func execute(village: VillageState, villager_id: int, building_instance_id: StringName) -> Dictionary:
+	if _population == null:
+		return _result(false, &"service_unavailable", "Service de population indisponible.")
+	if village == null:
+		return _result(false, &"village_missing", "Village introuvable.")
+	if building_instance_id == &"":
+		return _result(false, &"building_missing", "Bâtiment introuvable.")
+
+	var assign_result := _population.assign_villager(village, villager_id, building_instance_id)
+	if not assign_result.get("ok", false):
+		var error_message := String(assign_result.get("error", "Affectation impossible."))
+		return _result(false, &"assign_failed", error_message)
+
+	_validate_assignment_coherence(village, villager_id, building_instance_id)
+	return _result(true, &"assigned", "Villageois %d affecté." % villager_id, {
+		"villager_id": villager_id,
+		"building_instance_id": building_instance_id,
+	})
+
+func _validate_assignment_coherence(village: VillageState, villager_id: int, building_instance_id: StringName) -> void:
+	if not OS.is_debug_build():
+		return
+
+	var villager := _find_villager(village.villagers, villager_id)
+	var building := _find_building(village.placed_buildings, building_instance_id)
+	if villager == null or building == null:
+		push_warning("AssignVillagerUseCase: vérification impossible (entités introuvables).")
+		return
+
+	if villager.assigned_building_id != building_instance_id:
+		push_warning("AssignVillagerUseCase: assigned_building_id incohérent après affectation.")
+	if not building.assigned_worker_ids.has(villager_id):
+		push_warning("AssignVillagerUseCase: index assigned_worker_ids incohérent après affectation.")
+
+	var assignment_found := false
+	for entry in village.worker_assignments:
+		if int(entry.get("villager_id", -1)) != villager_id:
+			continue
+		if entry.get("building_instance_id", &"") == building_instance_id:
+			assignment_found = true
+			break
+	if not assignment_found:
+		push_warning("AssignVillagerUseCase: worker_assignments transitoire non synchronisé.")
+
+func _find_villager(villagers: Array[VillagerRuntimeData], villager_id: int) -> VillagerRuntimeData:
+	for villager in villagers:
+		if villager.id == villager_id:
+			return villager
+	return null
+
+func _find_building(buildings: Array[BuildingInstance], building_id: StringName) -> BuildingInstance:
+	for building in buildings:
+		if building.id == building_id:
+			return building
+	return null
+
+func _result(success: bool, code: StringName, message: String, payload: Dictionary = {}) -> Dictionary:
+	return {
+		"success": success,
+		"code": code,
+		"message": message,
+		"payload": payload,
+	}
