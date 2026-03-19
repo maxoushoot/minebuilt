@@ -1,3 +1,12 @@
+# TemplateBuilderController
+# -----------------------------------------------------------------------------
+# Architecture role: Controller (template authoring UI/input orchestration).
+# Responsibilities:
+# - Handles edit interactions for blocks and functional objects.
+# - Delegates mutations/validation to services and runtime state containers.
+# - Builds in-memory template resources for validation and save actions.
+# Guardrail:
+# - Business validation rules stay in TemplateValidationService, not here.
 extends Node3D
 class_name TemplateBuilderController
 
@@ -54,6 +63,7 @@ var _object_nodes_by_cell: Dictionary = {}
 var _archetypes_by_index: Array[TemplateArchetypeDefinition] = []
 var _objects_by_index: Array[FunctionalObjectDefinition] = []
 
+# Template-builder bootstrap: reset runtime layer, configure renderer, wire UI.
 func _ready() -> void:
 	AppServices.session_runtime.reset_template_builder_runtime(AppServices.session)
 	_build_state = AppServices.session.template_voxel_state
@@ -75,9 +85,11 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	_update_ghost_from_mouse()
 
+# Compatibility helper kept for quick test hooks in scene scripts.
 func validate_sample(template: BuildingTemplateDefinition, archetype: TemplateArchetypeDefinition) -> Dictionary:
 	return AppServices.template_validation.validate_template(template, archetype)
 
+# Input orchestration only (place/remove/switch tools), no domain rule logic.
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_LEFT:
@@ -160,6 +172,7 @@ func _try_remove_block() -> void:
 		return
 	_try_remove_object()
 
+# Object placement path includes controller-side UX guards before save/validate.
 func _try_place_object() -> void:
 	if not _ghost_valid:
 		return
@@ -245,6 +258,7 @@ func _on_archetype_option_item_selected(index: int) -> void:
 func _on_object_option_item_selected(_index: int) -> void:
 	_update_status_text()
 
+# Validation flow: build runtime template snapshot -> delegate to validation service.
 func _on_validate_pressed() -> void:
 	if _selected_archetype == null:
 		_set_validation_message("Select an archetype before validation.", Color(0.95, 0.5, 0.45))
@@ -259,6 +273,7 @@ func _on_validate_pressed() -> void:
 	var errors: Array = result.get("errors", [])
 	_set_validation_message("Validation failed:\n- %s" % ["\n- ".join(errors)], Color(0.95, 0.5, 0.45))
 
+# Save flow: validate first, then append to in-session template catalog.
 func _on_save_template_pressed() -> void:
 	if _selected_archetype == null:
 		_set_validation_message("Cannot save: no archetype selected.", Color(0.95, 0.5, 0.45))
@@ -322,6 +337,7 @@ func _populate_functional_objects() -> void:
 	if not _objects_by_index.is_empty():
 		_object_option.select(0)
 
+# Builds a normalized template resource from current editor runtime state.
 func _build_runtime_template(id_suffix: String) -> BuildingTemplateDefinition:
 	var template := BuildingTemplateDefinition.new()
 	template.id = StringName("template_%s_%d" % [id_suffix, Time.get_ticks_usec()])

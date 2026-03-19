@@ -1,3 +1,8 @@
+# FunctionalObjectDefinition
+# -----------------------------------------------------------------------------
+# Architecture role: Data Definition (functional object catalog entry).
+# Responsibilities:
+# - Declares object id/category and footprint used in template workflows.
 extends Resource
 class_name FunctionalObjectDefinition
 

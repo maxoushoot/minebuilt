@@ -1,3 +1,13 @@
+# AssignVillagerUseCase
+# -----------------------------------------------------------------------------
+# Architecture role: Use Case (work assignment business action).
+# Responsibilities:
+# - Validates assignment request context and delegates mutation to
+#   PopulationService.
+# - Returns standardized result payload and debug coherence checks.
+# Side effects:
+# - Mutates canonical villager/building assignment fields.
+# - Updates transient worker_assignments mirror through PopulationService.
 extends RefCounted
 class_name AssignVillagerUseCase
 
@@ -7,6 +17,13 @@ func setup(population: PopulationService) -> AssignVillagerUseCase:
 	_population = population
 	return self
 
+# Executes villager-to-building assignment flow.
+# Inputs: village aggregate, villager id, building instance id.
+# Output: standardized success/failure dictionary.
+# Error code semantics:
+# - service_unavailable: missing dependency.
+# - village_missing/building_missing: invalid context.
+# - assign_failed: domain rejection (capacity, missing entities, etc.).
 func execute(village: VillageState, villager_id: int, building_instance_id: StringName) -> Dictionary:
 	if _population == null:
 		return UseCaseResultFactory.failure(&"service_unavailable", "Service de population indisponible.")
@@ -26,6 +43,7 @@ func execute(village: VillageState, villager_id: int, building_instance_id: Stri
 		"building_instance_id": building_instance_id,
 	})
 
+# Debug-only coherence guard ensuring canonical/transient assignment alignment.
 func _validate_assignment_coherence(village: VillageState, villager_id: int, building_instance_id: StringName) -> void:
 	if not OS.is_debug_build():
 		return
@@ -62,4 +80,3 @@ func _find_building(buildings: Array[BuildingInstance], building_id: StringName)
 		if building.id == building_id:
 			return building
 	return null
-

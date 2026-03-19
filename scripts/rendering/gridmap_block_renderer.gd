@@ -1,3 +1,12 @@
+# GridMapBlockRenderer
+# -----------------------------------------------------------------------------
+# Architecture role: Rendering system (visual projection of voxel state).
+# Responsibilities:
+# - Maps block ids to MeshLibrary items and colors.
+# - Renders full/partial voxel cells to GridMap.
+# - Displays edit/placement ghost visualization.
+# Side effects:
+# - Mutates scene graph render nodes only (no gameplay state mutation).
 extends Node3D
 class_name GridMapBlockRenderer
 
@@ -7,6 +16,7 @@ class_name GridMapBlockRenderer
 var _block_to_item: Dictionary = {}
 var _block_colors: Dictionary = {}
 
+# Configures runtime mesh library from block catalog definitions.
 func configure(block_entries: Array[Dictionary]) -> void:
 	var mesh_library := MeshLibrary.new()
 	_block_to_item.clear()
@@ -31,6 +41,7 @@ func configure(block_entries: Array[Dictionary]) -> void:
 
 	_grid_map.mesh_library = mesh_library
 
+# Re-renders entire voxel state.
 func render_full(state: VoxelBuildState) -> void:
 	_grid_map.clear()
 	if state == null:
@@ -39,6 +50,7 @@ func render_full(state: VoxelBuildState) -> void:
 		var cell: Vector3i = cell_key
 		render_cell(cell, state.cells[cell])
 
+# Renders or clears one cell depending on block payload.
 func render_cell(cell: Vector3i, cell_data: Dictionary) -> void:
 	if not cell_data.has("block_id"):
 		_grid_map.set_cell_item(cell, -1)
@@ -58,6 +70,7 @@ func clear_cell(cell: Vector3i) -> void:
 func world_to_cell(world_point: Vector3) -> Vector3i:
 	return _grid_map.local_to_map(_grid_map.to_local(world_point))
 
+# Shows translucent ghost block for current cursor operation.
 func set_ghost(cell: Vector3i, block_id: StringName, rotation: int = 0) -> void:
 	var color: Color = _block_colors.get(block_id, Color.WHITE)
 	var material := StandardMaterial3D.new()

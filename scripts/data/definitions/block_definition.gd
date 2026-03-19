@@ -1,3 +1,8 @@
+# BlockDefinition
+# -----------------------------------------------------------------------------
+# Architecture role: Data Definition (block catalog entry).
+# Responsibilities:
+# - Declares metadata for a placeable voxel block.
 extends Resource
 class_name BlockDefinition
 

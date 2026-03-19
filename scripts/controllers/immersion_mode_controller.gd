@@ -1,3 +1,9 @@
+# ImmersionModeController
+# -----------------------------------------------------------------------------
+# Architecture role: Controller (immersive view mode UX).
+# Responsibilities:
+# - Sets cursor capture mode for immersion view.
+# - Handles escape action back to world mode.
 extends Node3D
 class_name ImmersionModeController
 

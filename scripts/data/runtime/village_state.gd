@@ -1,3 +1,17 @@
+# VillageState
+# -----------------------------------------------------------------------------
+# Architecture role: Runtime Data (village simulation aggregate).
+# Responsibilities:
+# - Stores village simulation entities (buildings, villagers).
+# - Keeps compatibility/transient mirrors used by legacy UI and integrations.
+# - Stores aggregated logistics counters for quick UI read access.
+# Canonical vs transient:
+# - Canonical: placed_buildings, villagers.
+# - Transient compatibility mirrors: placed_blocks, worker_assignments,
+#   resource_stocks (derived aggregate).
+# Lifecycle:
+# - Created with GameSessionState.
+# - Reinitialized by SessionRuntimeService during world bootstrap/reset.
 extends Resource
 class_name VillageState
 

@@ -1,3 +1,14 @@
+# PopulationService
+# -----------------------------------------------------------------------------
+# Architecture role: Service (population and assignment domain rules).
+# Responsibilities:
+# - Computes worker capacity from archetype definitions.
+# - Spawns villagers when qualifying houses are placed.
+# - Applies villager assignment mutations and syncs transient assignment index.
+# Canonical vs transient:
+# - Canonical assignment fields: villager.assigned_building_id and
+#   building.assigned_worker_ids.
+# - Transient mirror: village.worker_assignments (kept in sync here).
 extends RefCounted
 class_name PopulationService
 
@@ -11,6 +22,7 @@ const WORKER_CAPACITY_BY_ARCHETYPE := {
 	&"townhall": 2,
 }
 
+# Derives minimum housing capacity from number of homes.
 func housing_capacity_from_home_count(home_count: int) -> int:
 	return home_count * HOUSE_MIN_RESIDENTS
 
@@ -33,6 +45,8 @@ func should_spawn_villagers_from_house(building: BuildingInstance) -> bool:
 			return true
 	return false
 
+# Spawns deterministic villager count for a house based on building id hash.
+# Side effects: none (returns new records for caller to append).
 func spawn_villagers_for_house(building: BuildingInstance, existing_villagers: Array[VillagerRuntimeData]) -> Array[VillagerRuntimeData]:
 	if not should_spawn_villagers_from_house(building):
 		return []
@@ -50,6 +64,10 @@ func spawn_villagers_for_house(building: BuildingInstance, existing_villagers: A
 		spawned.append(villager)
 	return spawned
 
+# Performs canonical villager assignment mutation with capacity enforcement.
+# Side effects:
+# - Mutates villager/building assignment fields.
+# - Regenerates village.worker_assignments transient mirror.
 func assign_villager(village: VillageState, villager_id: int, building_instance_id: StringName) -> Dictionary:
 	if village == null:
 		return {"ok": false, "error": "Village introuvable."}

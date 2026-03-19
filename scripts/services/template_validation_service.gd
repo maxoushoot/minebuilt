@@ -1,3 +1,10 @@
+# TemplateValidationService
+# -----------------------------------------------------------------------------
+# Architecture role: Service (template authoring validation rules).
+# Responsibilities:
+# - Validates saved/built templates against selected archetype requirements.
+# - Resolves functional object categories from explicit entries or definitions.
+# - Supports legacy and V1 object formats during transition.
 extends RefCounted
 class_name TemplateValidationService
 
@@ -13,10 +20,13 @@ const FUNCTIONAL_OBJECT_DEFINITIONS: Array[FunctionalObjectDefinition] = [
 
 var _category_by_object_id: Dictionary = {}
 
+# Prebuilds object_id -> category lookup for stable validation behavior.
 func _init() -> void:
 	for object_def in FUNCTIONAL_OBJECT_DEFINITIONS:
 		_category_by_object_id[object_def.id] = object_def.category
 
+# Validates template completeness against archetype business requirements.
+# Side effects: none.
 func validate_template(template: BuildingTemplateDefinition, archetype: TemplateArchetypeDefinition) -> Dictionary:
 	var errors: Array[String] = []
 	if template.block_cells.size() < max(archetype.minimum_block_count, 1):
@@ -38,6 +48,7 @@ func validate_template(template: BuildingTemplateDefinition, archetype: Template
 		"errors": errors,
 	}
 
+# Extracts all functional categories present in legacy and V1 object formats.
 func _extract_object_categories(template: BuildingTemplateDefinition) -> Dictionary:
 	var categories := {}
 	for object_id in template.object_placements.keys():
@@ -48,6 +59,7 @@ func _extract_object_categories(template: BuildingTemplateDefinition) -> Diction
 
 	return categories
 
+# Registers one object entry into category set with fallback inference rules.
 func _register_category_from_object_entry(categories: Dictionary, entry: Dictionary) -> void:
 	var explicit_category: StringName = entry.get("category", &"")
 	if explicit_category != &"":

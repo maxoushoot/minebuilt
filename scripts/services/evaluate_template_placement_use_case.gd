@@ -1,3 +1,13 @@
+# EvaluateTemplatePlacementUseCase
+# -----------------------------------------------------------------------------
+# Architecture role: Use Case (preview/validation stage of placement flow).
+# Responsibilities:
+# - Validates whether a template can be placed at origin/rotation.
+# - Returns transformed block/object instances for ghost preview and for
+#   downstream apply flow reuse.
+# Architectural note:
+# - This is intentionally executed before ApplyTemplatePlacementUseCase and then
+#   executed again inside apply to prevent stale preview acceptance.
 extends RefCounted
 class_name EvaluateTemplatePlacementUseCase
 
@@ -7,6 +17,13 @@ func setup(template_placement: TemplatePlacementService) -> EvaluateTemplatePlac
 	_template_placement = template_placement
 	return self
 
+# Executes placement evaluation without mutating runtime state.
+# Inputs: session/template/origin/rotation/world bounds.
+# Output: standardized UseCaseResultFactory response with payload:
+#   - errors: Array[String]
+#   - block_instances: transformed world-space blocks
+#   - object_instances: transformed world-space objects
+# Side effects: none.
 func execute(
 	session: GameSessionState,
 	template: BuildingTemplateDefinition,

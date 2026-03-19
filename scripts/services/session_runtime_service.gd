@@ -1,3 +1,17 @@
+# SessionRuntimeService
+# -----------------------------------------------------------------------------
+# Architecture role: Service (runtime bootstrap/reset/synchronization).
+# Responsibilities:
+# - Bootstraps world runtime canonical structures and dependent systems.
+# - Resets template-builder runtime map.
+# - Maintains compatibility transient mirrors (placed_blocks).
+# - Runs debug coherence checks for canonical/transient alignment.
+# Canonical vs transient:
+# - Canonical world voxels live in GameSessionState.world_voxel_state.cells.
+# - VillageState.placed_blocks is a transient compatibility mirror kept in sync.
+# Why transients still exist:
+# - Some legacy UI/runtime code paths still read village mirrors directly.
+# - This service centralizes synchronization to prevent ad-hoc drift.
 extends RefCounted
 class_name SessionRuntimeService
 
@@ -15,6 +29,11 @@ func setup(
 	_logistics = logistics
 	return self
 
+# Initializes a playable world runtime from services and session containers.
+# Side effects:
+# - Recreates canonical terrain voxels.
+# - Resets village runtime entities and transient aggregates.
+# - Rebuilds pathfinding graph and resets logistics runtime.
 func bootstrap_world_runtime(session: GameSessionState, map_width: int, map_depth: int, map_height: int) -> Dictionary:
 	if not _validate_runtime_dependencies() or session == null:
 		return _result(false, &"invalid_runtime", "Runtime world indisponible.")
@@ -40,18 +59,21 @@ func bootstrap_world_runtime(session: GameSessionState, map_width: int, map_dept
 	_validate_runtime_coherence(session)
 	return _result(true, &"ok", "Runtime monde initialisé.")
 
+# Clears template-builder canonical voxel state for a fresh editing session.
 func reset_template_builder_runtime(session: GameSessionState) -> Dictionary:
 	if session == null or session.template_voxel_state == null:
 		return _result(false, &"invalid_runtime", "Runtime template builder indisponible.")
 	session.template_voxel_state.cells.clear()
 	return _result(true, &"ok", "Runtime template builder réinitialisé.")
 
+# Public sync entrypoint for compatibility transient blocks mirror.
 func sync_transient_world_blocks(session: GameSessionState) -> void:
 	if session == null or session.village == null or session.world_voxel_state == null:
 		return
 	_sync_transient_placed_blocks(session.village, session.world_voxel_state)
 	_validate_runtime_coherence(session)
 
+# Public debug helper to run runtime coherence checks on demand.
 func validate_runtime_coherence(session: GameSessionState) -> void:
 	_validate_runtime_coherence(session)
 

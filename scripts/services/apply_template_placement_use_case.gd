@@ -1,3 +1,13 @@
+# ApplyTemplatePlacementUseCase
+# -----------------------------------------------------------------------------
+# Architecture role: Use Case (authoritative placement mutation flow).
+# Responsibilities:
+# - Re-validates placement via EvaluateTemplatePlacementUseCase.
+# - Applies voxel/building/villager/runtime side effects if validation passes.
+# - Triggers downstream runtime sync (pathfinding, logistics, transients).
+# Architectural note:
+# - Validation intentionally occurs twice (preview + apply) to guarantee final
+#   placement integrity against runtime changes between input frames.
 extends RefCounted
 class_name ApplyTemplatePlacementUseCase
 
@@ -27,6 +37,20 @@ func setup(
 	_session_runtime = session_runtime
 	return self
 
+# Executes full placement business flow.
+# Flow:
+# 1) Validate dependencies/runtime/template.
+# 2) Re-run placement evaluation (authoritative check).
+# 3) Mutate canonical world voxels and create canonical BuildingInstance.
+# 4) Spawn villagers (house rules), update pathfinding/logistics.
+# 5) Sync transient mirrors via SessionRuntimeService.
+# Result payload:
+# - building_instance_id
+# - spawned_villager_count
+# - changed_cells
+# Side effects:
+# - Mutates session.village/session.world_voxel_state.
+# - Rebuilds local navigation data and logistics aggregates.
 func execute(
 	session: GameSessionState,
 	template: BuildingTemplateDefinition,
@@ -51,6 +75,7 @@ func execute(
 
 	var transformed_blocks: Array[Dictionary] = evaluation_result.get("payload", {}).get("block_instances", [])
 	var transformed_objects: Array[Dictionary] = evaluation_result.get("payload", {}).get("object_instances", [])
+	# Canonical voxel mutation: writes into world_voxel_state.cells.
 	for entry in transformed_blocks:
 		var cell: Vector3i = entry.get("cell", Vector3i.ZERO)
 		var block_id: StringName = entry.get("block_id", &"grass")
@@ -93,6 +118,7 @@ func _has_dependencies() -> bool:
 		and _session_runtime != null
 	)
 
+# Extracts touched cells for local pathfinding refresh and UI feedback payload.
 func _extract_changed_cells(transformed_blocks: Array[Dictionary]) -> Array[Vector3i]:
 	var changed: Array[Vector3i] = []
 	for entry in transformed_blocks:
